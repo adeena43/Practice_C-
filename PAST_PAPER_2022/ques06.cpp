@@ -23,9 +23,9 @@ class File{
 		{
 			cout<<"Printing a file"<<endl;
 		}
-		friend bool const operator * (File , File );
+		friend bool operator * (File , File ) const;
 };
-bool const operator * (File file_object_1, File file_object_2)
+bool operator * (File file_object_1, File file_object_2) const
 {
 	if(file_object_1.size==file_object_1.size&&(!strcmp(file_object_1.location,file_object_2.location)))
 	{
