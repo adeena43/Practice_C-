@@ -102,5 +102,9 @@ int main()
 	
 	fptr3->Open();
 	fptr3->print();
+	
+	delete fptr1;
+	delete fptr2;
+	delete fptr3;
 	return 0;
 }
