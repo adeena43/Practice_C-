@@ -1,0 +1,63 @@
+#include <iostream>
+
+class Counter {
+private:
+    int count;
+
+public:
+    // Constructor
+    Counter(int c = 0) : count(c) {}
+
+    // Postfix increment operator overloading
+    Counter operator++(int) {
+        Counter temp(*this); // Create a copy of the original object
+        count++; // Increment the count
+        return temp; // Return the copy (old value)
+    }
+
+    // Prefix increment operator overloading
+    Counter& operator++() {
+        count++; // Increment the count
+        return *this; // Return the modified object (new value)
+    }
+
+    // Postfix decrement operator overloading
+    Counter operator--(int) {
+        Counter temp(*this); // Create a copy of the original object
+        count--; // Decrement the count
+        return temp; // Return the copy (old value)
+    }
+
+    // Prefix decrement operator overloading
+    Counter& operator--() {
+        count--; // Decrement the count
+        return *this; // Return the modified object (new value)
+    }
+
+    // Getter method for count
+    int getCount() const {
+        return count;
+    }
+};
+
+int main() {
+    Counter c(5);
+
+    // Postfix increment
+    Counter postInc = c++;
+    std::cout << "Postfix increment: " << postInc.getCount() << std::endl; // Output: 5
+
+    // Prefix increment
+    ++c;
+    std::cout << "Prefix increment: " << c.getCount() << std::endl; // Output: 7
+
+    // Postfix decrement
+    Counter postDec = c--;
+    std::cout << "Postfix decrement: " << postDec.getCount() << std::endl; // Output: 7
+
+    // Prefix decrement
+    --c;
+    std::cout << "Prefix decrement: " << c.getCount() << std::endl; // Output: 5
+
+    return 0;
+}
