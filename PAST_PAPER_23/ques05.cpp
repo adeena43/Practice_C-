@@ -1,231 +1,201 @@
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <sstream>
-#include <algorithm>
+#include <string>
+#include <vector>
+#include <map>
+#include <stdexcept>
+
 using namespace std;
 
-class Bot_Exception
-{
+// Custom exception class for bot errors
+class Bot_Exception : public exception {
+private:
     string message;
 
 public:
-    Bot_Exception(const string &msg) : message(msg) {}
-    string what() const { return message; }
+    Bot_Exception(const string& msg) : message(msg) {}
+
+    // Override the what() function to provide error message
+    const char* what() const noexcept override {
+        return message.c_str();
+    }
 };
 
-class User
-{
-    string username, country, interest;
+// User class to store user data
+class User {
+private:
+    string username;
+    string country;
+    string interest;
     int age;
 
 public:
-    User(string username, string country, string interest, int age)
-        : username(username), country(country), interest(interest), age(age) {}
+    User(string uname, string cntry, string intrst, int ag) 
+        : username(uname), country(cntry), interest(intrst), age(ag) {}
 
-    string get_username() const { return username; }
-    string get_interest() const { return interest; }
+    // Method to ask query and generate response
+    string Ask(const string& query) {
+        string prefix = get_prefix(query);
+        if (prefix == "doc" && interest == "medical") {
+            return "Medical response for query: " + query;
+        } else if (prefix == "attorney" && interest == "legal") {
+            return "Legal response for query: " + query;
+        } else if (prefix == "guru" && interest == "technology") {
+            return "Technology response for query: " + query;
+        } else if (prefix == "special") {
+            return "Query forwarded to relevant chatbot based on interest.";
+        } else {
+            throw Bot_Exception("Invalid query: " + query);
+        }
+    }
 
-    void Ask(string query);
+    // Getter method for username
+    string getUsername() const { return username; }
+
+private:
+    // Function to extract prefix from query
+    string get_prefix(const string& query) {
+        istringstream iss(query);
+        string prefix;
+        iss >> prefix;
+        return prefix;
+    }
 };
 
-class Chatbot
-{
+// Base class for chatbot
+class Chatbot {
 protected:
-    int total_users = 0;
-    string recent_user;
+    string last_user;
+    static int total_users;
 
 public:
-    virtual string generate_response(string query, const User &u) = 0;
-    virtual void increment_user_count() { ++total_users; }
-    virtual int get_user_count() const { return total_users; }
+    // Method to generate response
+    virtual string generate_response(const string& query, User& user) = 0;
+
+    // Method to get total user count
+    static int getTotalUsers() { return total_users; }
 };
 
-class MedicalChatbot : public Chatbot
-{
-    int instance_count = 0;
+int Chatbot::total_users = 0; // Initializing static member
 
+// Medical chatbot class
+class MedicalChatbot : public Chatbot {
 public:
-    MedicalChatbot() { ++instance_count; }
-    string generate_response(string query, const User &u)
-    {
-        recent_user = u.get_username();
-        increment_user_count();
-        return "Medical response to " + query;
+    string generate_response(const string& query, User& user) override {
+        last_user = user.getUsername();
+        total_users++;
+        return user.Ask(query);
     }
-    int get_instance_count() { return instance_count; }
 };
 
-class TechnologyChatbot : public Chatbot
-{
-    int instance_count = 0;
-
+// Legal chatbot class
+class LegalChatbot : public Chatbot {
 public:
-    TechnologyChatbot() { ++instance_count; }
-    string generate_response(string query, const User &u)
-    {
-        recent_user = u.get_username();
-        increment_user_count();
-        return "Technology response to " + query;
+    string generate_response(const string& query, User& user) override {
+        last_user = user.getUsername();
+        total_users++;
+        return user.Ask(query);
     }
-    int get_instance_count() { return instance_count; }
 };
 
-class LegalChatbot : public Chatbot
-{
-    int instance_count = 0;
-
+// Technology chatbot class
+class TechnologyChatbot : public Chatbot {
 public:
-    LegalChatbot() { ++instance_count; }
-    string generate_response(string query, const User &u)
-    {
-        recent_user = u.get_username();
-        increment_user_count();
-        return "Legal response to " + query;
+    string generate_response(const string& query, User& user) override {
+        last_user = user.getUsername();
+        total_users++;
+        return user.Ask(query);
     }
-    int get_instance_count() { return instance_count; }
 };
 
-class GeneralChatbot : public Chatbot
-{
-    int instance_count;
-
+// General chatbot class
+class GeneralChatbot : public Chatbot {
 public:
-    GeneralChatbot() { ++instance_count; }
-    string generate_response(string query, const User &u)
-    {
-        recent_user = u.get_username();
-        increment_user_count();
-        return "General response to " + query;
+    string generate_response(const string& query, User& user) override {
+        last_user = user.getUsername();
+        total_users++;
+        return user.Ask(query);
     }
-    int get_instance_count() { return instance_count; }
 };
 
-// User method implementation
-void User::Ask(string query)
-{
-    try
-    {
-        if (query.find("doc") == 0)
-        {
-            MedicalChatbot med;
-            cout << med.generate_response(query, *this) << endl;
-        }
-        else if (query.find("attorney") == 0)
-        {
-            LegalChatbot legal;
-            cout << legal.generate_response(query, *this) << endl;
-        }
-        else if (query.find("guru") == 0)
-        {
-            TechnologyChatbot tech;
-            cout << tech.generate_response(query, *this) << endl;
-        }
-        else if (query.find("special") == 0)
-        {
-            if (interest == "medical")
-            {
-                MedicalChatbot med;
-                cout << med.generate_response(query, *this) << endl;
-            }
-            else if (interest == "legal")
-            {
-                LegalChatbot legal;
-                cout << legal.generate_response(query, *this) << endl;
-            }
-            else if (interest == "technology")
-            {
-                TechnologyChatbot tech;
-                cout << tech.generate_response(query, *this) << endl;
-            }
-            else
-            {
-                GeneralChatbot general;
-                cout << general.generate_response(query, *this) << endl;
-            }
-        }
-        else
-        {
-            throw Bot_Exception("Invalid query prefix");
-        }
-    }
-    catch (Bot_Exception &e)
-    {
-        ofstream error_log("error_log.txt", ios::app);
-        error_log << username << ": " << query << endl;
+// Function to handle exceptions and log errors
+void handle_exception(const Bot_Exception& e, const User& user) {
+    cout << "Error: " << e.what() << endl;
+    // Log error to error_log.txt
+    ofstream error_log("error_log.txt", ios::app);
+    if (error_log.is_open()) {
+        error_log << "User: " << user.getUsername() << ", Query: " << e.what() << endl;
         error_log.close();
-        cout << "Exception: " << e.what() << endl;
+    } else {
+        cerr << "Error: Unable to open error log file." << endl;
     }
 }
 
-void Analysis()
-{
-    ifstream read("error_log.txt");
-    bool userFound = false;
-    int cnt = 0;
-    string username;
-    int countexception[100];
-    string name[100];
-    string line;
-    while (getline(read, line))
-    {
-        int spaceCounter = 0;
-        for (int i = 0; i < line.length(); i++)
-        {
-            if (line[i] == ' ')
-            {
-                spaceCounter++;
-            }
-            else
-            {
-                if (spaceCounter == 0)
-                {
-                    username += line[i];
-                }
+// Function to analyze error log
+void Analysis() {
+    ifstream error_log("error_log.txt");
+    if (error_log.is_open()) {
+        string line;
+        map<string, int> user_exceptions;
+        int total_words = 0;
+        while (getline(error_log, line)) {
+            istringstream iss(line);
+            string username, query_word;
+            iss >> username;
+            user_exceptions[username]++;
+            while (iss >> query_word) {
+                total_words++;
             }
         }
+        error_log.close();
 
-        for (int i = 0; i < cnt; i++)
-        {
-            if (username == name[i])
-            {
-                countexception[i] = countexception[i] + 1;
-                userFound = true;
-                break;
+        // Print username with maximum exceptions
+        string max_user;
+        int max_exceptions = 0;
+        for (const auto& entry : user_exceptions) {
+            if (entry.second > max_exceptions) {
+                max_exceptions = entry.second;
+                max_user = entry.first;
             }
         }
-        if (!userFound)
-        {
-            name[cnt] = username;
-            countexception[cnt] = 1;
-            cnt++;
-        }
+        cout << "Username with maximum exceptions: " << max_user << endl;
+
+        // Print total count of words from each query stored
+        cout << "Total count of words from each query stored: " << total_words << endl;
+    } else {
+        cerr << "Error: Unable to open error log file for analysis." << endl;
     }
-    int max_queries = countexception[0];
-    int maxUserIndex;
-    for (int i = 1; i < cnt; i++)
-    {
-        if (countexception[i] > max_queries)
-        {
-            max_queries = countexception[i];
-            maxUserIndex = i;
-        }
-    }
-    cout << "Maximum Number Of Queries Held By: " << name[maxUserIndex] << endl;
-    read.close();
 }
 
-int main()
-{
-    User u1("Alice", "USA", "medical", 25);
-    User u2("Bob", "UK", "technology", 30);
-    User u3("Charlie", "Canada", "legal", 35);
+int main() {
+    // Creating users
+    User user1("John", "USA", "medical", 30);
+    User user2("Alice", "UK", "technology", 25);
+    User user3("Bob", "Canada", "legal", 40);
 
-    u1.Ask("doc How are you?");
-    u2.Ask("guru What's new?");
-    u3.Ask("attorney Need legal advice");
-    u1.Ask("unknown prefix query");
+    // Creating chatbots
+    MedicalChatbot med_chatbot;
+    TechnologyChatbot tech_chatbot;
+    LegalChatbot legal_chatbot;
 
+    try {
+        // Testing queries
+        cout << med_chatbot.generate_response("doc How to treat flu?", user1) << endl;
+        cout << tech_chatbot.generate_response("guru How to code in C++?", user2) << endl;
+        cout << legal_chatbot.generate_response("attorney Legal advice for business contracts.", user3) << endl;
+        cout << med_chatbot.generate_response("special Medical advice for diabetes.", user1) << endl;
+        cout << tech_chatbot.generate_response("special Technology news update.", user2) << endl;
+        cout << legal_chatbot.generate_response("special Legal consultation for property issues.", user3) << endl;
+
+        // Testing invalid queries
+        cout << med_chatbot.generate_response("Invalid query", user1) << endl;
+    } catch (const Bot_Exception& e) {
+        // Handle exceptions
+        handle_exception(e, user1);
+    }
+
+    // Analyze error log
     Analysis();
 
     return 0;
